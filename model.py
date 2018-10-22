@@ -1,7 +1,30 @@
-from typing import Dict, Union, Any, List
+from typing import Dict, Union, Any, List, Set
 
 class DefaultPath(object):
     pass
+
+class AmbiguousPrefixError(Exception):
+    def __init__(self, matches: Set[str], prefix: str):
+        self.matches = matches
+        self.prefix = prefix
+
+class NoMatchError(Exception):
+    def __init__(self, names: Set[str], prefix: str):
+        self.names = names
+        self.prefix = prefix
+
+def prefix_match(ns: Set[str], p: str) -> Union[str, AmbiguousPrefixError, NoMatchError]:
+    """Finds a single value in ns of which p is a prefix.
+
+    Returns an error if p is a prefix of multiple values in ns.
+    """
+    matches = {n for n in ns if n.startswith(p)}
+    if len(matches) == 0:
+        return NoMatchError(ns, p)
+    elif len(matches) > 1:
+        return AmbiguousPrefixError(matches, p)
+    else:
+        return matches.pop()
 
 class Store(object):
     SubStore = Dict[str, Union[str, 'Store']]
