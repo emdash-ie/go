@@ -6,7 +6,7 @@ from sys import argv, exit
 from os import environ
 from argparse import ArgumentParser
 from typing import List, Any, Dict, Union
-from mytypes import DefaultPath
+from model import DefaultPath
 
 def main(output=print) -> None:
     args = parse_arguments(argv[1:])
