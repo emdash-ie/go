@@ -44,12 +44,13 @@ class Store(object):
         elif key[0] not in self.paths:
             raise NonExistingKeyError(self.paths, key)
         else:
+            next = self.paths[key[0]]
             if len(key) == 1:
                 del self.paths[key[0]]
-            elif isinstance(self.paths[key[0]], str):
+            elif isinstance(next, str):
                 raise PathTooLongError(self.paths, key)
             else:
-                self.paths[key[0]].remove(key[1:])
+                next.remove(key[1:])
 
     def __str__(self) -> str:
         return str(self.paths)
