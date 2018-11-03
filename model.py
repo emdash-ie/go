@@ -1,4 +1,4 @@
-from typing import Dict, Union, Any, List, Set
+from typing import Dict, Union, Any, List, Set, Optional
 
 class DefaultPath(object):
     pass
@@ -27,56 +27,57 @@ def prefix_match(ns: Set[str], p: str) -> Union[str, AmbiguousPrefixError, NoMat
         return matches.pop()
 
 class Store(object):
-    SubStore = Dict[str, Union[str, 'Store']]
-    paths: SubStore
+    SubStore = Dict[str, 'Store']
+    children: SubStore
+    path: Optional[str]
 
-    def __init__(self, ps: SubStore):
-        self.paths = ps
+    def __init__(self, children: SubStore = {}, path: str = None):
+        self.children = children
+        self.path = path
 
-    def lookup(self, key: List[str]) -> str:
-        next_level = self.paths[key[0]]
-        if isinstance(next_level, str):
-            if len(key) == 1:
-                return next_level
+    def lookup(self, keys: List[str]) -> str:
+        if keys == []:
+            if self.path is None:
+                raise NonExistingKeyError(keys, self.children)
             else:
-                raise PathTooLongError(next_level, key)
+                return self.path
+        elif keys[0] not in self.children:
+            raise NonExistingKeyError(keys, self.children)
         else:
-            if len(key) == 1:
-                raise PathTooShortError(self.paths, key)
-            else:
-                return next_level.lookup(key[1:])
+            return self.children[keys[0]].lookup(keys[1:])
 
-    def insert(self, key: List[str], value: str) -> None:
-        if key == []:
-            raise PathTooShortError(self.paths, key)
-        elif len(key) == 1:
-            if key[0] in self.paths:
-                raise ExistingKey(self.paths, key)
+    def insert(self, keys: List[str], value: str) -> None:
+        if keys == []:
+            if self.path is None:
+                self.path = value
             else:
-                self.paths[key[0]] = value
+                raise ExistingKeyError(self.children, keys)
+        elif keys[0] in self.children:
+            self.children[keys[0]].insert(keys[1:], value)
         else:
-            next = self.paths[key[0]]
-            if isinstance(next, str):
-                raise KeyConflictError(self.paths, key)
-            else:
-                next.insert(key[1:], value)
+            store = Store()
+            store.insert(keys[1:], value)
+            self.children[keys[0]] = store
 
-    def remove(self, key: List[str]) -> None:
-        if key == []:
-            raise PathTooShortError(self.paths, key)
-        elif key[0] not in self.paths:
-            raise NonExistingKeyError(self.paths, key)
-        else:
-            next = self.paths[key[0]]
-            if len(key) == 1:
-                del self.paths[key[0]]
-            elif isinstance(next, str):
-                raise PathTooLongError(self.paths, key)
+    def remove(self, keys: List[str]) -> None:
+        if keys == []:
+            raise PathTooShortError(self.children, keys)
+        elif keys[0] not in self.children:
+            raise NonExistingKeyError(self.children, keys)
+        elif len(keys) == 1:
+            next = self.children[keys[0]]
+            if next.children == {}:
+                del self.children[keys[0]]
             else:
-                next.remove(key[1:])
+                next.path = None
+        else:
+            self.children[keys[0]].remove(keys[1:])
 
     def __str__(self) -> str:
-        return str(self.paths)
+        return str([f'({k}: {s.path}, {str(s)})' for k, s in self.children.items()])
+
+    def __repr__(self) -> str:
+        return f'Store(children={repr(self.children)}, path={repr(self.path)})'
 
 class StoreError(Exception):
     pass
@@ -87,7 +88,7 @@ class PathTooLongError(StoreError):
 class PathTooShortError(StoreError):
     pass
 
-class ExistingKey(StoreError):
+class ExistingKeyError(StoreError):
     pass
 
 class NonExistingKeyError(StoreError):
@@ -96,21 +97,21 @@ class NonExistingKeyError(StoreError):
 class KeyConflictError(StoreError):
     pass
 
-def test_lookup(ns: str) -> str:
-    return test_store().lookup(ns.split())
-
-def test_insert(key: str, value: str) -> Store:
-    s = test_store()
-    s.insert(key.split(), value)
-    if s.lookup(key.split()) == value:
-        print('Lookup after insertion returns inserted value')
-    else:
-        print('Lookup after insertion does not return inserted value')
-    return s
-
-def test_store() -> Store:
-    return Store(
-        {'labs': Store(
-            {'ai': '/path/to/ai/labs/', 'compiler': '/path/to/compiler/labs/'}),
-        'lectures': Store(
-            {'ai': '/path/to/ai/lectures/', 'compiler': '/path/to/compiler/lectures/'})})
+# def test_lookup(ns: str) -> str:
+#     return test_store().lookup(ns.split())
+#
+# def test_insert(key: str, value: str) -> Store:
+#     s = test_store()
+#     s.insert(key.split(), value)
+#     if s.lookup(key.split()) == value:
+#         print('Lookup after insertion returns inserted value')
+#     else:
+#         print('Lookup after insertion does not return inserted value')
+#     return s
+#
+# def test_store() -> Store:
+#     return Store(
+#         {'labs': Store(
+#             {'ai': '/path/to/ai/labs/', 'compiler': '/path/to/compiler/labs/'}),
+#         'lectures': Store(
+#             {'ai': '/path/to/ai/lectures/', 'compiler': '/path/to/compiler/lectures/'})})

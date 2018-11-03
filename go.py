@@ -6,7 +6,7 @@ from sys import argv, exit
 from os import environ
 from argparse import ArgumentParser
 from typing import List, Any, Dict, Union
-from model import DefaultPath
+from model import DefaultPath, Store
 
 def main(output=print) -> None:
     args = parse_arguments(argv[1:])
@@ -31,8 +31,8 @@ def main(output=print) -> None:
             output(bullet(options(locations())))
             exit(1)
 
-def lookup(locations: Dict[str, str], name: str) -> str:
-    return expand(locations[name])
+def lookup(locations: Store, name: str) -> str:
+    return expand(locations.lookup(name))
 
 def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath):
@@ -52,11 +52,11 @@ def options(locations: Dict[str, str]) -> List[str]:
 def bullet(lines: List[str]) -> str:
     return '\n'.join(f'- {l}' for l in lines)
 
-def locations() -> Dict[str, str]:
+def locations() -> Store:
     with shelve.open('/Users/Noel/.go/go-file') as db:
         return db['locations']
 
-def store(locations: Dict[str, str]) -> None:
+def store(locations: Store) -> None:
     with shelve.open('/Users/Noel/.go/go-file') as db:
         db['locations'] = locations
 
