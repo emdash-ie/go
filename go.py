@@ -36,7 +36,7 @@ def lookup(locations: Store, name: str) -> str:
 
 def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath):
-        locations[name] = '.'
+        locations[name] = os.get_cwd()
     else:
         locations[name] = path
     return locations
