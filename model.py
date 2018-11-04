@@ -57,6 +57,7 @@ class Store(object):
         else:
             store = Store()
             store.insert(keys[1:], value)
+            self.children = self.children.copy()
             self.children[keys[0]] = store
 
     def remove(self, keys: List[str]) -> None:
