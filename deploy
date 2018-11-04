@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
 rm build/*
 cp model.py build/model.py
-cp go.py build/go
+cp go build/go
 ln -fs (realpath build/go) ~/.bin/go

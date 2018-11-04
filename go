@@ -3,7 +3,7 @@ import sys
 import shelve
 from shelve import Shelf
 from sys import argv, exit
-from os import environ
+from os import environ, getcwd
 from argparse import ArgumentParser
 from typing import List, Any, Dict, Union
 from model import DefaultPath, Store
@@ -32,11 +32,11 @@ def main(output=print) -> None:
             exit(1)
 
 def lookup(locations: Store, name: str) -> str:
-    return expand(locations.lookup(name))
+    return expand(locations[name])
 
 def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath):
-        locations[name] = os.get_cwd()
+        locations[name] = getcwd()
     else:
         locations[name] = path
     return locations
