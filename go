@@ -65,8 +65,8 @@ def expand(s: str) -> str:
 
 def parse_arguments(arguments: List[str]) -> Any:
     parser = ArgumentParser(description='Use and manage filesystem shortcuts.')
-    parser.add_argument('--add', '-a', action='store_true')
-    parser.add_argument('--remove', '-x', action='store_true')
+    parser.add_argument('-a', '--add', action='store_true')
+    parser.add_argument('-x', '--remove', action='store_true')
     parser.add_argument('name', nargs='?', default=None)
     parser.add_argument('path', nargs='?', default=DefaultPath())
     return parser.parse_args(arguments)
