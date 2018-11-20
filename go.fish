@@ -4,8 +4,6 @@ function go -d "Uses the go program to navigate shortcuts"
     case 0
         cd $output
     case 1
-        for line in $output
-            echo $line
-        end
+        string join \n -- $output | less -S
     end
 end
