@@ -47,7 +47,7 @@ def remove(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) 
     return locations
 
 def options(locations: Dict[str, str]) -> List[str]:
-    return [f'{n} ({p})' for n, p in sorted(locations.items(), key=lambda t: t[1])]
+    return [f'{n} ({p})' for n, p in sorted(locations.items(), key=lambda t: t[0])]
 
 def bullet(lines: List[str]) -> str:
     return '\n'.join(f'- {l}' for l in lines)
