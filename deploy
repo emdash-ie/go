@@ -2,4 +2,5 @@
 rm build/*
 cp model.py build/model.py
 cp go build/go
+cp go.fish ~/.config/fish/functions
 ln -fs (realpath build/go) ~/.bin/go
