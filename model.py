@@ -3,28 +3,31 @@ from typing import Dict, Union, Any, List, Set, Optional
 class DefaultPath(object):
     pass
 
-class AmbiguousPrefixError(Exception):
-    def __init__(self, matches: Set[str], prefix: str):
+class PathLookupError(Exception):
+    pass
+
+class AmbiguousPrefixError(PathLookupError):
+    def __init__(self, matches: Dict[str, str], prefix: str):
         self.matches = matches
         self.prefix = prefix
 
-class NoMatchError(Exception):
-    def __init__(self, names: Set[str], prefix: str):
+class NoMatchError(PathLookupError):
+    def __init__(self, names: Dict[str, str], prefix: str):
         self.names = names
         self.prefix = prefix
 
-def prefix_match(ns: Set[str], p: str) -> Union[str, AmbiguousPrefixError, NoMatchError]:
+def prefix_match(ns: Dict[str, str], p: str) -> Union[str, PathLookupError]:
     """Finds a single value in ns of which p is a prefix.
 
     Returns an error if p is a prefix of multiple values in ns.
     """
-    matches = {n for n in ns if n.startswith(p)}
+    matches = {k: v for k, v in ns.items() if k.startswith(p)}
     if len(matches) == 0:
         return NoMatchError(ns, p)
     elif len(matches) > 1:
         return AmbiguousPrefixError(matches, p)
     else:
-        return matches.pop()
+        return matches.popitem()[1]
 
 class Store(object):
     SubStore = Dict[str, 'Store']

@@ -6,7 +6,14 @@ from sys import argv, exit
 from os import environ, getcwd
 from argparse import ArgumentParser
 from typing import List, Any, Dict, Union
-from model import DefaultPath, Store
+from model import (
+    DefaultPath,
+    Store,
+    PathLookupError,
+    NoMatchError,
+    AmbiguousPrefixError,
+    prefix_match
+)
 
 def main(output=print) -> None:
     args = parse_arguments(argv[1:])
@@ -23,16 +30,21 @@ def main(output=print) -> None:
         output(bullet(options(locations())))
         exit(1)
     else:
-        try:
-            output(lookup(locations(), args.name))
+        p = lookup(locations(), args.name)
+        if isinstance(p, str):
+            output(expand(p))
             exit(0)
-        except KeyError:
+        elif isinstance(p, NoMatchError):
             output(f"Couldn’t find {args.name} – available locations are:")
             output(bullet(options(locations())))
             exit(1)
+        elif isinstance(p, AmbiguousPrefixError):
+            output(f"Got more than one match for {args.name}:")
+            output(bullet(options(p.matches)))
+            exit(1)
 
-def lookup(locations: Dict[str, str], name: str) -> str:
-    return expand(locations[name])
+def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
+    return prefix_match(locations, name)
 
 def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath):
