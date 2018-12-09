@@ -5,7 +5,7 @@ from shelve import Shelf
 from sys import argv, exit
 from os import environ, getcwd
 from argparse import ArgumentParser
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, Tuple
 from model import (
     DefaultPath,
     Store,
@@ -27,7 +27,7 @@ def main(output=print) -> None:
         exit(2)
     elif args.name is None:
         output("Available locations:")
-        output(bullet(options(locations())))
+        output(bullet(options(use_prefixes(locations()))))
         exit(1)
     else:
         p = lookup(locations(), args.name)
@@ -40,7 +40,7 @@ def main(output=print) -> None:
             exit(1)
         elif isinstance(p, AmbiguousPrefixError):
             output(f"Got more than one match for {args.name}:")
-            output(bullet(options(p.matches)))
+            output(bullet(options(use_prefixes(p.matches))))
             exit(1)
 
 def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
@@ -61,6 +61,30 @@ def options(locations: Dict[str, str]) -> List[str]:
     shortcuts = locations.items()
     max_path_length = max(map(lambda s: len(s[0]), shortcuts))
     return [f"{n:<{max_path_length}} ({p})" for n, p in sorted(shortcuts, key=lambda t: t[0])]
+
+def use_prefixes(locations: Dict[str, str]) -> Dict[str, str]:
+    tuples = (use_prefix(locations, (n, p)) for n, p in locations.items())
+    return {n: p for n, p in tuples}
+
+def use_prefix(
+        locations: Dict[str, str],
+        location: Tuple[str, str]) -> Tuple[str, str]:
+    n1, p1 = location
+    prefixes = [
+        (n, p) for n, p in locations.items()
+        if p != p1 and p1.startswith(p)
+    ]
+    if prefixes == []:
+        return n1, p1
+    else:
+        n2, p2 = max(
+            prefixes,
+            key = lambda t: len(t[1])
+        )
+        if len(p2) < 3:
+            return n1, p1
+        return n1, p1.replace(f"{p2}/", f"{n2} -> ")
+
 
 def bullet(lines: List[str]) -> str:
     return "\n".join(f"- {l}" for l in lines)
