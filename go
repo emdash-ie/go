@@ -39,9 +39,13 @@ def main(output=print) -> None:
             output(bullet(options(locations())))
             exit(1)
         elif isinstance(p, AmbiguousPrefixError):
-            output(f"Got more than one match for {args.name}:")
-            output(bullet(options(use_prefixes(p.matches))))
-            exit(1)
+            if args.name in p.matches:
+                output(expand(p.matches[args.name]))
+                exit(0)
+            else:
+                output(f"Got more than one match for {args.name}:")
+                output(bullet(options(use_prefixes(p.matches))))
+                exit(1)
 
 def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
     return prefix_match(locations, name)
