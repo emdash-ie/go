@@ -4,7 +4,7 @@ import shelve
 from shelve import Shelf
 from sys import argv, exit
 from os import environ, getcwd
-from argparse import ArgumentParser, Action
+from argparse import ArgumentParser, Action, Namespace
 from typing import List, Any, Dict, Union, Tuple
 from pathlib import Path
 from model import (
@@ -23,11 +23,13 @@ def main(output=print) -> None:
     to_remove = NameAndPath.from_list(args.remove)
     if to_add:
         store(add(locations(), to_add.name, to_add.path))
-        output(bullet(options(locations())))
-        exit(3)
+        exit(2)
     elif to_remove:
         store(remove(locations(), to_remove.name, to_remove.path))
-        output(bullet(options(locations())))
+        exit(2)
+    elif args.rename is not None:
+        old_name, new_name = args.rename
+        store(rename(locations(), old_name, new_name))
         exit(2)
     elif args.name is None:
         output("Available locations:")
@@ -63,6 +65,13 @@ def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> 
 def remove(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath) or locations[name] == path:
         del locations[name]
+    return locations
+
+def rename(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
+    p = locations.get(old_name)
+    if p is not None:
+        del locations[old_name]
+        locations[new_name] = p
     return locations
 
 def options(locations: Dict[str, str]) -> List[str]:
@@ -117,10 +126,11 @@ def use_tilde(s: str) -> str:
     else:
         return s
 
-def parse_arguments(arguments: List[str]) -> Any:
+def parse_arguments(arguments: List[str]) -> Namespace:
     parser = ArgumentParser(description="Use and manage filesystem shortcuts.")
     parser.add_argument("-a", "--add", nargs="+")
     parser.add_argument("-x", "--remove", nargs="+")
+    parser.add_argument("-r", "--rename", nargs=2)
     parser.add_argument("name", nargs="?", default=None)
     return parser.parse_args(arguments)
 
