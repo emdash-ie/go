@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 import sys
 import shelve
 from shelve import Shelf
 from sys import argv, exit
 from os import environ, getcwd
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Action
 from typing import List, Any, Dict, Union, Tuple
 from pathlib import Path
 from model import (
@@ -13,17 +13,20 @@ from model import (
     PathLookupError,
     NoMatchError,
     AmbiguousPrefixError,
-    prefix_match
+    prefix_match,
+    NameAndPath
 )
 
 def main(output=print) -> None:
     args = parse_arguments(argv[1:])
-    if args.add:
-        store(add(locations(), args.name, args.path))
+    to_add = NameAndPath.from_list(args.add)
+    to_remove = NameAndPath.from_list(args.remove)
+    if to_add:
+        store(add(locations(), to_add.name, to_add.path))
         output(bullet(options(locations())))
         exit(3)
-    elif args.remove:
-        store(remove(locations(), args.name, args.path))
+    elif to_remove:
+        store(remove(locations(), to_remove.name, to_remove.path))
         output(bullet(options(locations())))
         exit(2)
     elif args.name is None:
@@ -116,10 +119,9 @@ def use_tilde(s: str) -> str:
 
 def parse_arguments(arguments: List[str]) -> Any:
     parser = ArgumentParser(description="Use and manage filesystem shortcuts.")
-    parser.add_argument("-a", "--add", action="store_true")
-    parser.add_argument("-x", "--remove", action="store_true")
+    parser.add_argument("-a", "--add", nargs="+")
+    parser.add_argument("-x", "--remove", nargs="+")
     parser.add_argument("name", nargs="?", default=None)
-    parser.add_argument("path", nargs="?", default=DefaultPath())
     return parser.parse_args(arguments)
 
 if __name__ == "__main__":

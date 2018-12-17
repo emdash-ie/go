@@ -1,4 +1,5 @@
 from typing import Dict, Union, Any, List, Set, Optional
+from dataclasses import dataclass
 
 class DefaultPath(object):
     pass
@@ -101,21 +102,18 @@ class NonExistingKeyError(StoreError):
 class KeyConflictError(StoreError):
     pass
 
-# def test_lookup(ns: str) -> str:
-#     return test_store().lookup(ns.split())
-#
-# def test_insert(key: str, value: str) -> Store:
-#     s = test_store()
-#     s.insert(key.split(), value)
-#     if s.lookup(key.split()) == value:
-#         print('Lookup after insertion returns inserted value')
-#     else:
-#         print('Lookup after insertion does not return inserted value')
-#     return s
-#
-# def test_store() -> Store:
-#     return Store(
-#         {'labs': Store(
-#             {'ai': '/path/to/ai/labs/', 'compiler': '/path/to/compiler/labs/'}),
-#         'lectures': Store(
-#             {'ai': '/path/to/ai/lectures/', 'compiler': '/path/to/compiler/lectures/'})})
+@dataclass
+class NameAndPath(object):
+    name: str
+    path: Union[DefaultPath, str]
+
+    @classmethod
+    def from_list(cls, l: Optional[List[str]]) -> Optional["NameAndPath"]:
+        if l is None:
+            return None
+        elif len(l) == 0:
+            return None
+        elif len(l) == 1:
+            return NameAndPath(name=l[0], path=DefaultPath())
+        else:
+            return NameAndPath(name=l[0], path=l[1])
