@@ -1,12 +1,11 @@
 #!/usr/bin/env python3.7
 import sys
-import shelve
 from shelve import Shelf
 from sys import argv, exit
-from os import environ, getcwd
 from argparse import ArgumentParser, Action, Namespace
 from typing import List, Any, Dict, Union, Tuple
 from pathlib import Path
+from os import environ
 from model import (
     DefaultPath,
     Store,
@@ -14,7 +13,13 @@ from model import (
     NoMatchError,
     AmbiguousPrefixError,
     prefix_match,
-    NameAndPath
+    NameAndPath,
+    store,
+    add,
+    locations,
+    remove,
+    rename,
+    lookup
 )
 
 def main(output=print) -> None:
@@ -53,27 +58,6 @@ def main(output=print) -> None:
                 output(bullet(options(use_prefixes(p.matches))))
                 exit(1)
 
-def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
-    return prefix_match(locations, name)
-
-def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
-    if isinstance(path, DefaultPath):
-        path = getcwd()
-    locations[name] = use_tilde(path)
-    return locations
-
-def remove(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
-    if isinstance(path, DefaultPath) or locations[name] == path:
-        del locations[name]
-    return locations
-
-def rename(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
-    p = locations.get(old_name)
-    if p is not None:
-        del locations[old_name]
-        locations[new_name] = p
-    return locations
-
 def options(locations: Dict[str, str]) -> List[str]:
     shortcuts = locations.items()
     max_path_length = max(map(lambda s: len(s[0]), shortcuts))
@@ -106,25 +90,8 @@ def use_prefix(
 def bullet(lines: List[str]) -> str:
     return "\n".join(f"- {l}" for l in lines)
 
-def go_file() -> str:
-    return environ["HOME"] + "/.go/go-file"
-
-def locations() -> Dict[str, str]:
-    with shelve.open(go_file()) as db:
-        return db["locations"]
-
-def store(locations: Dict[str, str]) -> None:
-    with shelve.open(go_file()) as db:
-        db["locations"] = locations
-
 def expand(s: str) -> str:
     return s.replace("~", environ["HOME"])
-
-def use_tilde(s: str) -> str:
-    if s.startswith(environ["HOME"]):
-        return s.replace(environ["HOME"], "~", 1)
-    else:
-        return s
 
 def parse_arguments(arguments: List[str]) -> Namespace:
     parser = ArgumentParser(description="Use and manage filesystem shortcuts.")

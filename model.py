@@ -1,21 +1,49 @@
 from typing import Dict, Union, Any, List, Set, Optional
 from dataclasses import dataclass
+import shelve
+from os import environ, getcwd
+from errors import *
 
 class DefaultPath(object):
     pass
 
-class PathLookupError(Exception):
-    pass
+def locations() -> Dict[str, str]:
+    with shelve.open(go_file()) as db:
+        return db["locations"]
 
-class AmbiguousPrefixError(PathLookupError):
-    def __init__(self, matches: Dict[str, str], prefix: str):
-        self.matches = matches
-        self.prefix = prefix
+def store(locations: Dict[str, str]) -> None:
+    with shelve.open(go_file()) as db:
+        db["locations"] = locations
 
-class NoMatchError(PathLookupError):
-    def __init__(self, names: Dict[str, str], prefix: str):
-        self.names = names
-        self.prefix = prefix
+def go_file() -> str:
+    return environ["HOME"] + "/.go/go-file"
+
+def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
+    return prefix_match(locations, name)
+
+def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
+    if isinstance(path, DefaultPath):
+        path = getcwd()
+    locations[name] = use_tilde(path)
+    return locations
+
+def use_tilde(s: str) -> str:
+    if s.startswith(environ["HOME"]):
+        return s.replace(environ["HOME"], "~", 1)
+    else:
+        return s
+
+def remove(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
+    if isinstance(path, DefaultPath) or locations[name] == path:
+        del locations[name]
+    return locations
+
+def rename(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
+    p = locations.get(old_name)
+    if p is not None:
+        del locations[old_name]
+        locations[new_name] = p
+    return locations
 
 def prefix_match(ns: Dict[str, str], p: str) -> Union[str, PathLookupError]:
     """Finds a single value in ns of which p is a prefix.

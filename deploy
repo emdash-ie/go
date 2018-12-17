@@ -1,5 +1,4 @@
 #!/usr/bin/env fish
-cp model.py ~/.go/model.py
-cp go.py ~/.go/go.py
+cp *.py ~/.go/
 cp go.fish ~/.config/fish/functions
 ln -fs ~/.go/go.py ~/.bin/go
