@@ -6,6 +6,7 @@ from sys import argv, exit
 from os import environ, getcwd
 from argparse import ArgumentParser
 from typing import List, Any, Dict, Union, Tuple
+from pathlib import Path
 from model import (
     DefaultPath,
     Store,
@@ -93,12 +94,15 @@ def use_prefix(
 def bullet(lines: List[str]) -> str:
     return "\n".join(f"- {l}" for l in lines)
 
+def go_file() -> str:
+    return environ["HOME"] + "/.go/go-file"
+
 def locations() -> Dict[str, str]:
-    with shelve.open("/Users/Noel/.go/go-file") as db:
+    with shelve.open(go_file()) as db:
         return db["locations"]
 
 def store(locations: Dict[str, str]) -> None:
-    with shelve.open("/Users/Noel/.go/go-file") as db:
+    with shelve.open(go_file()) as db:
         db["locations"] = locations
 
 def expand(s: str) -> str:
