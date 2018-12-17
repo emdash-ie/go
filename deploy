@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
-rm build/*
+rm -r build/*
 cp model.py build/model.py
 cp go build/go
 cp go.fish ~/.config/fish/functions
