@@ -3,7 +3,7 @@ import sys
 from shelve import Shelf
 from sys import argv, exit
 from argparse import ArgumentParser, Action, Namespace
-from typing import List, Any, Dict, Union, Tuple
+from typing import List, Any, Dict, Union, Tuple, Sequence, Optional
 from pathlib import Path
 from os import environ
 from model import (
@@ -19,22 +19,20 @@ from model import (
     locations,
     remove,
     rename,
-    lookup
+    lookup,
+    TwoNames
 )
 
 def main(output=print) -> None:
     args = parse_arguments(argv[1:])
-    to_add = NameAndPath.from_list(args.add)
-    to_remove = NameAndPath.from_list(args.remove)
-    if to_add:
-        store(add(locations(), to_add.name, to_add.path))
+    if args.add:
+        store(add(locations(), args.add.name, args.add.path))
         exit(2)
-    elif to_remove:
-        store(remove(locations(), to_remove.name, to_remove.path))
+    elif args.remove:
+        store(remove(locations(), args.remove))
         exit(2)
-    elif args.rename is not None:
-        old_name, new_name = args.rename
-        store(rename(locations(), old_name, new_name))
+    elif args.rename:
+        store(rename(locations(), args.rename.old_name, args.rename.new_name))
         exit(2)
     elif args.name is None:
         output("Available locations:")
@@ -95,11 +93,41 @@ def expand(s: str) -> str:
 
 def parse_arguments(arguments: List[str]) -> Namespace:
     parser = ArgumentParser(description="Use and manage filesystem shortcuts.")
-    parser.add_argument("-a", "--add", nargs="+")
-    parser.add_argument("-x", "--remove", nargs="+")
-    parser.add_argument("-r", "--rename", nargs=2)
+    parser.add_argument("-a", "--add", action=NameAndPathAction)
+    parser.add_argument("-x", "--remove")
+    parser.add_argument("-r", "--rename", action=TwoNamesAction)
     parser.add_argument("name", nargs="?", default=None)
     return parser.parse_args(arguments)
+
+class NameAndPathAction(Action):
+    def __init__(self, *args,  **kwargs):
+        super().__init__(nargs="+", *args, **kwargs)
+    def __call__( # type: ignore
+        self,
+        parser: ArgumentParser,
+        namespace: Namespace,
+        values: List[str],
+        option_string: str,
+    ) -> None:
+        name = values[0]
+        path: Union[DefaultPath, str] = (
+            DefaultPath() if len(values) == 1 else values[1]
+        )
+        np = NameAndPath(name, path)
+        setattr(namespace, self.dest, np)
+
+class TwoNamesAction(Action):
+    def __init__(self, *args,  **kwargs):
+        super().__init__(nargs=2, *args, **kwargs)
+    def __call__( # type: ignore
+        self,
+        parser: ArgumentParser,
+        namespace: Namespace,
+        values: List[str],
+        option_string: str,
+    ) -> None:
+        ns = TwoNames(old_name=values[0], new_name=values[1])
+        setattr(namespace, self.dest, ns)
 
 if __name__ == "__main__":
     main()

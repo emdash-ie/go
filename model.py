@@ -33,8 +33,8 @@ def use_tilde(s: str) -> str:
     else:
         return s
 
-def remove(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
-    if isinstance(path, DefaultPath) or locations[name] == path:
+def remove(locations: Dict[str, str], name: str) -> Dict[str, str]:
+    if name in locations:
         del locations[name]
     return locations
 
@@ -135,13 +135,7 @@ class NameAndPath(object):
     name: str
     path: Union[DefaultPath, str]
 
-    @classmethod
-    def from_list(cls, l: Optional[List[str]]) -> Optional["NameAndPath"]:
-        if l is None:
-            return None
-        elif len(l) == 0:
-            return None
-        elif len(l) == 1:
-            return NameAndPath(name=l[0], path=DefaultPath())
-        else:
-            return NameAndPath(name=l[0], path=l[1])
+@dataclass
+class TwoNames(object):
+    old_name: str
+    new_name: str
