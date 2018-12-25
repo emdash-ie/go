@@ -3,7 +3,7 @@ import sys
 from shelve import Shelf
 from sys import argv, exit
 from argparse import ArgumentParser, Action, Namespace
-from typing import List, Any, Dict, Union, Tuple, Sequence, Optional
+from typing import List, Any, Dict, Union, Tuple, Sequence, Optional, Callable
 from pathlib import Path
 from os import environ
 from model import (
@@ -15,28 +15,28 @@ from model import (
     prefix_match,
     NameAndPath,
     store,
-    add,
+    new,
     locations,
-    remove,
+    delete,
     rename,
     lookup,
     TwoNames,
-    duplicate
+    copy
 )
 
-def main(output = print) -> None:
+def main(output: Callable[[str], None]  = print) -> None:
     args = parse_arguments(argv[1:])
-    if args.add:
-        store(add(locations(), args.add.name, args.add.path))
+    if args.new:
+        store(new(locations(), args.new.name, args.new.path))
         exit(2)
-    elif args.remove:
-        store(remove(locations(), args.remove))
+    elif args.delete:
+        store(delete(locations(), args.delete))
         exit(2)
     elif args.rename:
         store(rename(locations(), args.rename.old_name, args.rename.new_name))
         exit(2)
-    elif args.duplicate:
-        store(duplicate(locations(), args.duplicate.old_name, args.duplicate.new_name))
+    elif args.copy:
+        store(copy(locations(), args.copy.old_name, args.copy.new_name))
         exit(2)
     elif args.name is None:
         output("Available locations:")
@@ -97,10 +97,10 @@ def expand(s: str) -> str:
 
 def parse_arguments(arguments: List[str]) -> Namespace:
     parser = ArgumentParser(description="Use and manage filesystem shortcuts.")
-    parser.add_argument("-a", "--add", action=NameAndPathAction)
-    parser.add_argument("-x", "--remove")
+    parser.add_argument("-n", "--new", action=NameAndPathAction)
+    parser.add_argument("-d", "--delete")
     parser.add_argument("-r", "--rename", action=TwoNamesAction)
-    parser.add_argument("-d", "--duplicate", action=TwoNamesAction)
+    parser.add_argument("-c", "--copy", action=TwoNamesAction)
     parser.add_argument("name", nargs="?", default=None)
     return parser.parse_args(arguments)
 

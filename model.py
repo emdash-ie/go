@@ -21,7 +21,7 @@ def go_file() -> str:
 def lookup(locations: Dict[str, str], name: str) -> Union[str, PathLookupError]:
     return prefix_match(locations, name)
 
-def add(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
+def new(locations: Dict[str, str], name: str, path: Union[str, DefaultPath]) -> Dict[str, str]:
     if isinstance(path, DefaultPath):
         path = getcwd()
     locations[name] = use_tilde(path)
@@ -33,7 +33,7 @@ def use_tilde(s: str) -> str:
     else:
         return s
 
-def remove(locations: Dict[str, str], name: str) -> Dict[str, str]:
+def delete(locations: Dict[str, str], name: str) -> Dict[str, str]:
     if name in locations:
         del locations[name]
     return locations
@@ -45,7 +45,7 @@ def rename(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str,
         locations[new_name] = p
     return locations
 
-def duplicate(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
+def copy(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
     p = locations.get(old_name)
     if p is not None:
         locations[new_name] = p
@@ -98,7 +98,7 @@ class Store(object):
             self.children = self.children.copy()
             self.children[keys[0]] = store
 
-    def remove(self, keys: List[str]) -> None:
+    def delete(self, keys: List[str]) -> None:
         if keys == []:
             raise PathTooShortError(self.children, keys)
         elif keys[0] not in self.children:
@@ -110,7 +110,7 @@ class Store(object):
             else:
                 next.path = None
         else:
-            self.children[keys[0]].remove(keys[1:])
+            self.children[keys[0]].delete(keys[1:])
 
     def __str__(self) -> str:
         return str([f'({k}: {s.path}, {str(s)})' for k, s in self.children.items()])
