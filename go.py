@@ -20,10 +20,11 @@ from model import (
     remove,
     rename,
     lookup,
-    TwoNames
+    TwoNames,
+    duplicate
 )
 
-def main(output=print) -> None:
+def main(output = print) -> None:
     args = parse_arguments(argv[1:])
     if args.add:
         store(add(locations(), args.add.name, args.add.path))
@@ -33,6 +34,9 @@ def main(output=print) -> None:
         exit(2)
     elif args.rename:
         store(rename(locations(), args.rename.old_name, args.rename.new_name))
+        exit(2)
+    elif args.duplicate:
+        store(duplicate(locations(), args.duplicate.old_name, args.duplicate.new_name))
         exit(2)
     elif args.name is None:
         output("Available locations:")
@@ -96,6 +100,7 @@ def parse_arguments(arguments: List[str]) -> Namespace:
     parser.add_argument("-a", "--add", action=NameAndPathAction)
     parser.add_argument("-x", "--remove")
     parser.add_argument("-r", "--rename", action=TwoNamesAction)
+    parser.add_argument("-d", "--duplicate", action=TwoNamesAction)
     parser.add_argument("name", nargs="?", default=None)
     return parser.parse_args(arguments)
 

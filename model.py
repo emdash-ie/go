@@ -45,6 +45,12 @@ def rename(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str,
         locations[new_name] = p
     return locations
 
+def duplicate(locations: Dict[str, str], old_name: str, new_name: str) -> Dict[str, str]:
+    p = locations.get(old_name)
+    if p is not None:
+        locations[new_name] = p
+    return locations
+
 def prefix_match(ns: Dict[str, str], p: str) -> Union[str, PathLookupError]:
     """Finds a single value in ns of which p is a prefix.
 
