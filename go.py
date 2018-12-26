@@ -6,59 +6,72 @@ from argparse import ArgumentParser, Action, Namespace
 from typing import List, Any, Dict, Union, Tuple, Sequence, Optional, Callable
 from pathlib import Path
 from os import environ
-from model import (
-    DefaultPath,
-    Store,
-    PathLookupError,
-    NoMatchError,
-    AmbiguousPrefixError,
-    prefix_match,
-    NameAndPath,
-    store,
-    new,
-    locations,
-    delete,
-    rename,
-    lookup,
-    TwoNames,
-    copy
-)
+from dataclasses import dataclass
+import model as m
+
+@dataclass
+class Navigate:
+    destination: str
+
+@dataclass
+class Display:
+    message: str
+    locations: Dict[str, str]
+
+@dataclass
+class Update:
+    locations: Dict[str, str]
+
+GoAction = Union[Navigate, Display, Update]
 
 def main(output: Callable[[str], None]  = print) -> None:
     args = parse_arguments(argv[1:])
-    if args.new:
-        store(new(locations(), args.new.name, args.new.path))
+    action = take_action(m.locations(), args)
+    if isinstance(action, Navigate):
+        output(action.destination)
+        exit(0)
+    elif isinstance(action, Update):
+        m.store(action.locations)
         exit(2)
-    elif args.delete:
-        store(delete(locations(), args.delete))
-        exit(2)
-    elif args.rename:
-        store(rename(locations(), args.rename.old_name, args.rename.new_name))
-        exit(2)
-    elif args.copy:
-        store(copy(locations(), args.copy.old_name, args.copy.new_name))
-        exit(2)
-    elif args.name is None:
-        output("Available locations:")
-        output(bullet(options(use_prefixes(locations()))))
+    elif isinstance(action, Display):
+        output(
+            "\n".join([
+                action.message,
+                bullet(options(use_prefixes(action.locations)))
+            ])
+        )
         exit(1)
+
+def take_action(locations: Dict[str, str], args: Namespace) -> GoAction:
+    if args.new:
+        return Update(m.new(locations, args.new.name, args.new.path))
+    elif args.delete:
+        return Update(m.delete(locations, args.delete))
+    elif args.rename:
+        return Update(m.rename(locations, args.rename.old_name, args.rename.new_name))
+    elif args.copy:
+        return Update(m.copy(locations, args.copy.old_name, args.copy.new_name))
+    elif args.name is None:
+        return Display("Available locations:", locations)
     else:
-        p = lookup(locations(), args.name)
+        p = m.lookup(locations, args.name)
         if isinstance(p, str):
-            output(expand(p))
-            exit(0)
-        elif isinstance(p, NoMatchError):
-            output(f"Couldn’t find {args.name} – available locations are:")
-            output(bullet(options(locations())))
-            exit(1)
-        elif isinstance(p, AmbiguousPrefixError):
+            return Navigate(expand(p))
+        elif isinstance(p, m.NoMatchError):
+            return Display(
+                f"Couldn’t find {args.name} – available locations are:",
+                locations
+            )
+        elif isinstance(p, m.AmbiguousPrefixError):
             if args.name in p.matches:
-                output(expand(p.matches[args.name]))
-                exit(0)
+                return Navigate(expand(p.matches[args.name]))
             else:
-                output(f"Got more than one match for {args.name}:")
-                output(bullet(options(use_prefixes(p.matches))))
-                exit(1)
+                return Display(
+                    f"Got more than one match for {args.name}:",
+                    p.matches
+                )
+        else:
+            return Display("Got an unknown error.", {})
 
 def options(locations: Dict[str, str]) -> List[str]:
     shortcuts = locations.items()
@@ -115,10 +128,10 @@ class NameAndPathAction(Action):
         option_string: str,
     ) -> None:
         name = values[0]
-        path: Union[DefaultPath, str] = (
-            DefaultPath() if len(values) == 1 else values[1]
+        path: Union[m.DefaultPath, str] = (
+            m.DefaultPath() if len(values) == 1 else values[1]
         )
-        np = NameAndPath(name, path)
+        np = m.NameAndPath(name, path)
         setattr(namespace, self.dest, np)
 
 class TwoNamesAction(Action):
@@ -131,7 +144,7 @@ class TwoNamesAction(Action):
         values: List[str],
         option_string: str,
     ) -> None:
-        ns = TwoNames(old_name=values[0], new_name=values[1])
+        ns = m.TwoNames(old_name=values[0], new_name=values[1])
         setattr(namespace, self.dest, ns)
 
 if __name__ == "__main__":
