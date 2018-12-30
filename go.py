@@ -17,6 +17,7 @@ class Navigate:
 class Display:
     message: str
     locations: Dict[str, str]
+    exit: int
 
 @dataclass
 class Update:
@@ -28,19 +29,21 @@ def main(output: Callable[[str], None]  = print) -> None:
     args = parse_arguments(argv[1:])
     action = take_action(m.locations(), args)
     if isinstance(action, Navigate):
+        output("navigate")
         output(action.destination)
         exit(0)
     elif isinstance(action, Update):
         m.store(action.locations)
-        exit(2)
+        exit(0)
     elif isinstance(action, Display):
+        output("display")
         output(
             "\n".join([
                 action.message,
                 bullet(options(use_prefixes(action.locations)))
             ])
         )
-        exit(1)
+        exit(action.exit)
 
 def take_action(locations: Dict[str, str], args: Namespace) -> GoAction:
     if args.new:
@@ -52,7 +55,7 @@ def take_action(locations: Dict[str, str], args: Namespace) -> GoAction:
     elif args.copy:
         return Update(m.copy(locations, args.copy.old_name, args.copy.new_name))
     elif args.name is None:
-        return Display("Available locations:", locations)
+        return Display("Available locations:", locations, 0)
     else:
         p = m.lookup(locations, args.name)
         if isinstance(p, str):
@@ -60,7 +63,8 @@ def take_action(locations: Dict[str, str], args: Namespace) -> GoAction:
         elif isinstance(p, m.NoMatchError):
             return Display(
                 f"Couldn’t find {args.name} – available locations are:",
-                locations
+                locations,
+                1
             )
         elif isinstance(p, m.AmbiguousPrefixError):
             if args.name in p.matches:
@@ -68,10 +72,11 @@ def take_action(locations: Dict[str, str], args: Namespace) -> GoAction:
             else:
                 return Display(
                     f"Got more than one match for {args.name}:",
-                    p.matches
+                    p.matches,
+                    2
                 )
         else:
-            return Display("Got an unknown error.", {})
+            return Display("Got an unknown error.", {}, 3)
 
 def options(locations: Dict[str, str]) -> List[str]:
     shortcuts = locations.items()
